@@ -1,0 +1,1 @@
+# bolt-competitor-research-agent
