@@ -52,7 +52,8 @@ export const ResultsPage: React.FC = () => {
         .trim();
 
       // Split content into paragraphs by recognized headers
-      const paragraphs = content.split(/(?=Current Position:|Competitive Advantage:|Target Audience:|Market Share:|Revenue:|Growth:|Strategy:|Technology:|Future Outlook:)/g)
+      const paragraphs = content
+        .split(/(?=Current Position:|Competitive Advantage:|Target Audience:|Market Share:|Revenue:|Growth:|Strategy:|Technology:|Future Outlook:)/g)
         .map(p => p.trim())
         .filter(Boolean);
 
@@ -99,7 +100,7 @@ export const ResultsPage: React.FC = () => {
           }
 
           const lines = doc.splitTextToSize(paragraph, 170);
-          lines.forEach(line => {
+          lines.forEach((line: string) => {  // <-- Type added here
             doc.text(line, 20, yPosition);
             yPosition += 8;
           });
