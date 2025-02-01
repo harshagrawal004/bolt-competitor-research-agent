@@ -35,30 +35,38 @@ export const ResultsPage: React.FC = () => {
   const analysis = location.state?.analysis as AnalysisData | undefined;
 
   const parseContent = useCallback((text: string) => {
-    return text.split('##')
-      .filter(Boolean)
-      .map(section => {
-        const [title, ...content] = section.split('\n');
-        
-        const cleanContent = content
-          .join(' ')
-          .replace(/\*\*/g, '')
-          .replace(/- /g, '')
-          .replace(/\s+/g, ' ')
-          .trim();
+    if (!text) return [];
 
-        const paragraphs = cleanContent.split(/(?=Current Position:|Competitive advantage:|Target audience:|Recent launches:|Pipeline developments:|Leadership Changes:|Strategic Initiatives:|Company Announcements:|Funding Rounds:|Revenue Indicators:|Market Share:|Growth Metrics:)/g);
+    // Split by main sections
+    const sections = text.split('##').filter(Boolean);
 
-        return {
-          title: title.trim(),
-          paragraphs: paragraphs
-            .map(p => p.trim())
-            .filter(Boolean)
-        };
-      });
+    return sections.map(section => {
+      // Split title and content
+      const [title, ...contentLines] = section.split('\n');
+
+      // Join content lines and clean up
+      const content = contentLines
+        .join('\n')
+        .replace(/\*\*/g, '') // Remove asterisks
+        .replace(/^\s*-\s*/gm, '') // Remove bullet points
+        .trim();
+
+      // Split content into paragraphs by recognized headers
+      const paragraphs = content.split(/(?=Current Position:|Competitive Advantage:|Target Audience:|Market Share:|Revenue:|Growth:|Strategy:|Technology:|Future Outlook:)/g)
+        .map(p => p.trim())
+        .filter(Boolean);
+
+      return {
+        title: title.trim(),
+        paragraphs
+      };
+    });
   }, []);
 
-  const sections = analysis ? parseContent(analysis.analysis.text) : [];
+  const sections = React.useMemo(() => {
+    if (!analysis?.analysis?.text) return [];
+    return parseContent(analysis.analysis.text);
+  }, [analysis, parseContent]);
 
   const downloadPDF = useCallback(() => {
     if (!analysis) return;
@@ -74,13 +82,13 @@ export const ResultsPage: React.FC = () => {
       let yPosition = 40;
 
       sections.forEach(section => {
-        // Section title
+        // Add section title
         doc.setFontSize(18);
         doc.setTextColor(88, 80, 236);
         doc.text(section.title, 20, yPosition);
         yPosition += 15;
 
-        // Section paragraphs
+        // Add paragraphs
         doc.setFontSize(12);
         doc.setTextColor(60, 60, 60);
 
@@ -98,6 +106,8 @@ export const ResultsPage: React.FC = () => {
           
           yPosition += 10;
         });
+
+        yPosition += 10;
       });
 
       const fileName = `${analysis.companyName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_analysis.pdf`;
@@ -133,12 +143,6 @@ export const ResultsPage: React.FC = () => {
     'Market Share': PieChart,
     'Revenue Analysis': BarChart4,
     'Future Outlook': Rocket
-  };
-
-  const getIconForSection = (title: string) => {
-    const defaultIcon = Building2;
-    const IconComponent = sectionIcons[title] || defaultIcon;
-    return <IconComponent className="w-6 h-6 text-purple-500 dark:text-purple-400" />;
   };
 
   return (
@@ -192,32 +196,55 @@ export const ResultsPage: React.FC = () => {
 
         {/* Analysis Content */}
         <div className="space-y-6">
-          {sections.map((section, idx) => (
-            <div 
-              key={idx}
-              className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300"
-            >
-              <div className="p-6 border-b border-gray-100 dark:border-gray-700">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                    {getIconForSection(section.title)}
+          {sections.map((section, idx) => {
+            const IconComponent = sectionIcons[section.title] || Building2;
+            
+            return (
+              <div 
+                key={idx}
+                className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300"
+              >
+                <div className="p-6 border-b border-gray-100 dark:border-gray-700">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                      <IconComponent className="w-6 h-6 text-purple-500 dark:text-purple-400" />
+                    </div>
+                    <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 dark:text-white">
+                      {section.title}
+                    </h2>
                   </div>
-                  <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 dark:text-white">
-                    {section.title}
-                  </h2>
+                </div>
+                <div className="p-6">
+                  <div className="space-y-6">
+                    {section.paragraphs.map((paragraph, i) => {
+                      // Split into heading and content if it contains a colon
+                      const [heading, ...content] = paragraph.split(':');
+                      const hasColon = paragraph.includes(':');
+
+                      if (hasColon) {
+                        return (
+                          <div key={i} className="space-y-2">
+                            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+                              {heading.trim()}
+                            </h3>
+                            <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
+                              {content.join(':').trim()}
+                            </p>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <p key={i} className="text-gray-600 dark:text-gray-300 leading-relaxed">
+                          {paragraph}
+                        </p>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
-              <div className="p-6">
-                <div className="space-y-4">
-                  {section.paragraphs.map((paragraph, i) => (
-                    <p key={i} className="text-gray-600 dark:text-gray-300 leading-relaxed">
-                      {paragraph}
-                    </p>
-                  ))}
-                </div>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Footer */}
