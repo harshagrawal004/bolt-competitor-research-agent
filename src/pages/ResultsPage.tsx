@@ -1,11 +1,22 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { GradientButton } from '../components/GradientButton';
 import { 
   ArrowLeft, 
   Download,
   Globe,
-  Calendar
+  Calendar,
+  Building2,
+  Target,
+  TrendingUp,
+  Users,
+  Rocket,
+  LineChart,
+  BarChart4,
+  PieChart,
+  Network,
+  Briefcase,
+  Flag
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 
@@ -23,26 +34,12 @@ export const ResultsPage: React.FC = () => {
   const navigate = useNavigate();
   const analysis = location.state?.analysis as AnalysisData | undefined;
 
-  if (!analysis) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50 dark:bg-gray-900">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-4">No Analysis Data Found</h2>
-          <GradientButton onClick={() => navigate('/analyze')}>
-            Start New Analysis
-          </GradientButton>
-        </div>
-      </div>
-    );
-  }
-
-  const parseContent = (text: string) => {
+  const parseContent = useCallback((text: string) => {
     return text.split('##')
       .filter(Boolean)
       .map(section => {
         const [title, ...content] = section.split('\n');
         
-        // Clean up the content
         const cleanContent = content
           .join(' ')
           .replace(/\*\*/g, '')
@@ -50,7 +47,6 @@ export const ResultsPage: React.FC = () => {
           .replace(/\s+/g, ' ')
           .trim();
 
-        // Split into paragraphs
         const paragraphs = cleanContent.split(/(?=Current Position:|Competitive advantage:|Target audience:|Recent launches:|Pipeline developments:|Leadership Changes:|Strategic Initiatives:|Company Announcements:|Funding Rounds:|Revenue Indicators:|Market Share:|Growth Metrics:)/g);
 
         return {
@@ -60,11 +56,13 @@ export const ResultsPage: React.FC = () => {
             .filter(Boolean)
         };
       });
-  };
+  }, []);
 
-  const sections = parseContent(analysis.analysis.text);
+  const sections = analysis ? parseContent(analysis.analysis.text) : [];
 
-  const downloadPDF = () => {
+  const downloadPDF = useCallback(() => {
+    if (!analysis) return;
+
     try {
       const doc = new jsPDF();
       
@@ -108,6 +106,39 @@ export const ResultsPage: React.FC = () => {
       console.error('Error generating PDF:', error);
       alert('There was an error generating the PDF. Please try again.');
     }
+  }, [analysis, sections]);
+
+  if (!analysis) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50 dark:bg-gray-900">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-4">No Analysis Data Found</h2>
+          <GradientButton onClick={() => navigate('/analyze')}>
+            Start New Analysis
+          </GradientButton>
+        </div>
+      </div>
+    );
+  }
+
+  const sectionIcons: Record<string, React.ElementType> = {
+    'Market Position': Building2,
+    'Product Portfolio': Briefcase,
+    'Corporate Updates': Users,
+    'Financial Status': LineChart,
+    'Growth Metrics': TrendingUp,
+    'Competitive Analysis': Target,
+    'Strategic Initiatives': Flag,
+    'Technology Stack': Network,
+    'Market Share': PieChart,
+    'Revenue Analysis': BarChart4,
+    'Future Outlook': Rocket
+  };
+
+  const getIconForSection = (title: string) => {
+    const defaultIcon = Building2;
+    const IconComponent = sectionIcons[title] || defaultIcon;
+    return <IconComponent className="w-6 h-6 text-purple-500 dark:text-purple-400" />;
   };
 
   return (
@@ -164,12 +195,17 @@ export const ResultsPage: React.FC = () => {
           {sections.map((section, idx) => (
             <div 
               key={idx}
-              className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden"
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300"
             >
               <div className="p-6 border-b border-gray-100 dark:border-gray-700">
-                <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 dark:text-white">
-                  {section.title}
-                </h2>
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                    {getIconForSection(section.title)}
+                  </div>
+                  <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 dark:text-white">
+                    {section.title}
+                  </h2>
+                </div>
               </div>
               <div className="p-6">
                 <div className="space-y-4">
@@ -182,6 +218,11 @@ export const ResultsPage: React.FC = () => {
               </div>
             </div>
           ))}
+        </div>
+
+        {/* Footer */}
+        <div className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
+          Analysis generated on {new Date(analysis.analysisDate).toLocaleDateString()}
         </div>
       </div>
     </div>

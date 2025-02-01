@@ -1,7 +1,6 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
 
-// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
   build: {
@@ -12,10 +11,5 @@ export default defineConfig({
         manualChunks: undefined
       }
     }
-  },
-  server: {
-    port: 3000,
-    host: true
-  },
-  base: '/' // Ensure base URL is set correctly
-})
+  }
+});
